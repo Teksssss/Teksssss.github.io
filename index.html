@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SonicStream - Web Music Player</title>
+    <style>
+        /* Shared Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header Navigation */
+        header {
+            background-color: #070707;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #282828;
+        }
+
+        header h1 {
+            color: #1DB954; /* Music-themed green */
+            font-size: 24px;
+        }
+
+        /* Main Content Layout */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            width: 240px;
+            background-color: #000000;
+            padding: 20px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar-btn {
+            display: block; 
+            padding: 12px 16px;
+            color: #b3b3b3;
+            text-decoration: none; 
+            font-weight: bold;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        .sidebar-btn:hover {
+            color: #ffffff;
+            background-color: #282828; 
+        }
+
+        .sidebar-btn.active {
+            color: #ffffff;
+            background-color: #1DB954; 
+        }
+
+        /* Music Panels Layout */
+        .content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, #1f1f1f, #121212);
+        }
+
+        .content h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        /* Search input styling */
+        .search-container {
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 14px 20px;
+            border-radius: 30px;
+            border: 2px solid transparent;
+            background-color: #2a2a2a;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            background-color: #333333;
+            border-color: #1DB954;
+        }
+
+        .search-input::placeholder {
+            color: #b3b3b3;
+        }
+
+        /* Track List General Styles */
+        .track-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .track-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .track-item.playing {
+            background-color: rgba(29, 185, 84, 0.2);
+            border: 1px solid #1DB954;
+        }
+
+        .track-number {
+            width: 30px;
+            color: #b3b3b3;
+        }
+
+        .track-info {
+            flex: 1;
+        }
+
+        .track-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .track-artist {
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .remove-track-btn {
+            background: none;
+            border: none;
+            color: #b3b3b3;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .remove-track-btn:hover {
+            color: #ff4444;
+            background-color: rgba(255, 68, 68, 0.1);
+        }
+
+        .no-results, .empty-msg {
+            color: #b3b3b3;
+            font-style: italic;
+            padding: 10px 20px;
+        }
+
+        /* Library Section Layouts */
+        .library-section-title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #282828;
+            padding-bottom: 10px;
+        }
+
+        .library-section-title {
+            font-size: 20px;
+            color: #e5e5e5;
+        }
+        
+        .action-buttons-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .action-link-btn {
+            background: none;
+            border: none;
+            color: #1DB954;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .action-link-btn:hover {
+            color: #1ed760;
+            text-decoration: underline;
+        }
+
+        .action-link-btn.danger {
+            color: #ff4444;
+        }
+        .action-link-btn.danger:hover {
+            color: #ff6666;
+        }
+
+        /* Track Insertion Bar */
+        .input-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .custom-input {
+            background-color: #282828;
+            border: 1px solid #3e3e3e;
+            border-radius: 4px;
+            padding: 8px 14px;
+            color: #fff;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .custom-input:focus {
+            outline: 1px solid #1DB954;
+        }
+
+        .submit-btn {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .submit-btn:hover {
+            background-color: #1ed760;
+        }
+
+        /* Autocomplete Box Dropdown */
+        .autocomplete-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #1f1f1f;
+            border: 1px solid #3e3e3e;
+            border-radius: 0 0 6px 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            margin-top: 2px;
+        }
+
+        .autocomplete-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #282828;
+            transition: background-color 0.1s;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #383838;
+        }
+
+        .autocomplete-title {
+            font-weight: bold;
+            font-size: 14px;
+            color: #fff;
+        }
+
+        .autocomplete-artist {
+            font-size: 12px;
+            color: #b3b3b3;
+            margin-top: 2px;
+        }
+
+        /* Grid Cards Elements */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background-color: #181818;
+            padding: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+
+        .card:hover {
+            background-color: #282828;
+        }
+
+        .card-cover {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            user-select: none;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .delete-card-btn {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: #ffffff;
+            font-size: 12px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .card:hover .delete-card-btn {
+            opacity: 1;
+        }
+
+        .delete-card-btn:hover {
+            background-color: #ff4444;
+            transform: scale(1.1);
+        }
+
+        /* --- Creator Specific Layout Overlays --- */
+        .creator-layout {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+
+        .form-section {
+            flex: 1;
+            max-width: 500px;
+            background-color: #181818;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #b3b3b3;
+        }
+
+        .large-input {
+            width: 100%;
+            background-color: #282828;
+            border: 1px solid #3e3e3e;
+            border-radius: 6px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 18px;
+            transition: outline 0.2s;
+        }
+
+        .large-input:focus {
+            outline: 2px solid #1DB954;
+            border-color: transparent;
+        }
+
+        .vibe-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .vibe-option {
+            aspect-ratio: 1 / 1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+            user-select: none;
+        }
+
+        .vibe-option:hover {
+            transform: scale(1.05);
+        }
+
+        .vibe-option.selected {
+            border-color: #ffffff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+        }
+
+        .create-btn {
+            width: 100%;
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 16px;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: 10px;
+        }
+
+        .create-btn:hover {
+            background-color: #1ed760;
+            transform: scale(1.02);
+        }
+
+        .create-btn:active {
+            transform: scale(0.98);
+        }
+
+        .preview-section {
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .preview-label {
+            font-weight: bold;
+            color: #b3b3b3;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+        }
+
+        .preview-section .card {
+            width: 100%;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            cursor: default;
+        }
+        
+        .preview-section .card:hover {
+            background-color: #181818; /* Keep static color lock */
+        }
+
+        .preview-section .card-cover {
+            font-size: 64px;
+            transition: background 0.3s ease;
+        }
+
+        /* Bottom Player Bar */
+        .player-bar {
+            background-color: #181818;
+            padding: 20px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid #282828;
+        }
+
+        .now-playing-details {
+            text-align: center;
+        }
+
+        .now-playing-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .now-playing-artist {
+            font-size: 12px;
+            color: #b3b3b3;
+            margin-top: 2px;
+        }
+
+        audio {
+            width: 100%;
+            max-width: 700px;
+            background-color: #181818;
+            border-radius: 30px;
+        }
+
+        audio::-webkit-media-controls-panel {
+            background-color: #282828;
+        }
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SonicStream</h1>
+        <div>Premium Sound</div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li><a href="#" class="sidebar-btn active" onclick="switchPage('home-view', this)">🏠 Home</a></li>
+                    <li><a href="#" class="sidebar-btn" onclick="switchPage('search-view', this)">🔍 Search</a></li>
+                    <li><a href="#" class="sidebar-btn" onclick="switchPage('library-view', this)">📚 Your Library</a></li>
+                    <li><a href="#" class="sidebar-btn" onclick="switchPage('create-playlist-view', this)">➕ Create Playlist</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            
+            <section id="home-view" class="page-view">
+                <h2>Trending Tracks</h2>
+                <div class="track-list">
+                    <div class="track-item" onclick="playTrack('DopeNation-Kakalika.mp3', 'Kakalika', 'DopeNation', this)">
+                        <div class="track-number">1</div>
+                        <div class="track-info">
+                            <div class="track-title">Kakalika</div>
+                            <div class="track-artist">DopeNation</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Famous-Pluto-Jembe-feat-Mavo.mp3', 'Jembe', 'Famous Pluto feat.Mavo', this)">
+                        <div class="track-number">2</div>
+                        <div class="track-info">
+                            <div class="track-title">Jembe</div>
+                            <div class="track-artist">Famous Pluto feat.Mavo</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Famous-Pluto-Na-Scra-(TrendyBeatz.com).mp3', 'Na Scra', 'Famous Pluto', this)">
+                        <div class="track-number">3</div>
+                        <div class="track-info">
+                            <div class="track-title">Na Scra</div>
+                            <div class="track-artist">Famous Pluto</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Kilobizzy.mp3', 'Kilobizzy', 'Mavo', this)">
+                        <div class="track-number">4</div>
+                        <div class="track-info">
+                            <div class="track-title">Kilobizzy</div>
+                            <div class="track-artist">Mavo</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Mavo  Mofe (Official Music Video).mp3', 'Mofe', 'Mavo', this)">
+                        <div class="track-number">5</div>
+                        <div class="track-info">
+                            <div class="track-title">Mofe</div>
+                            <div class="track-artist">Mavo</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Mavo_-_Feel_Nice_@BaseNaija.mp3', 'Feel Nice', 'Mavo', this)">
+                        <div class="track-number">6</div>
+                        <div class="track-info">
+                            <div class="track-title">Feel Nice</div>
+                            <div class="track-artist">Mavo</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('NO11---TOO-HOT-naijatempo.com.mp3', 'Too Hot', 'NO11', this)">
+                        <div class="track-number">7</div>
+                        <div class="track-info">
+                            <div class="track-title">Too Hot</div>
+                            <div class="track-artist">NO11</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('NO11-HOW-FAR.mp3', 'How Far', 'NO11', this)">
+                        <div class="track-number">8</div>
+                        <div class="track-info">
+                            <div class="track-title">How Far</div>
+                            <div class="track-artist">NO11</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Rema-Bounce-New-Song-(TrendyBeatz.com).mp3', 'Bounce', 'Rema', this)">
+                        <div class="track-number">9</div>
+                        <div class="track-info">
+                            <div class="track-title">Bounce</div>
+                            <div class="track-artist">Rema</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Shallipopi & Gunna - HIM (Official Video).mp3', 'HIM', 'Shallipopi feat.Gunna', this)">
+                        <div class="track-number">10</div>
+                        <div class="track-info">
+                            <div class="track-title">HIM</div>
+                            <div class="track-artist">Shallipopi feat.Gunna</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Sssoundgawd, Mavo - Aura Salad.mp3', 'Aura Salad', 'Sssoundgawd, Mavo', this)">
+                        <div class="track-number">11</div>
+                        <div class="track-info">
+                            <div class="track-title">Aura Salad</div>
+                            <div class="track-artist">Sssoundgawd, Mavo</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('SUPA - SEHski.mp3', 'SUPA-SEHski', 'Monochrome', this)">
+                        <div class="track-number">12</div>
+                        <div class="track-info">
+                            <div class="track-title">SUPA-SEHski</div>
+                            <div class="track-artist">Monochrome</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('TxC-Davido-ft-Shoday-Scotts-Maphuma-Al-Xapo---Nakupenda-naijatempo.com.mp3', 'Nakupenda', 'TxC-Davido-ft-Shoday-Scotts-Maphuma-Al-Xapo', this)">
+                        <div class="track-number">13</div>
+                        <div class="track-info">
+                            <div class="track-title">Nakupenda</div>
+                            <div class="track-artist">TxC-Davido-ft-Shoday-Scotts-Maphuma-Al-Xapo</div>
+                        </div>
+                    </div>
+
+                    <div class="track-item" onclick="playTrack('Zaylevelten-Muzz-(TrendyBeatz.com).mp3', 'Muzz', 'Zaylevelten', this)">
+                        <div class="track-number">14</div>
+                        <div class="track-info">
+                            <div class="track-title">Muzz</div>
+                            <div class="track-artist">Zaylevelten</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="search-view" class="page-view" style="display: none;">
+                <div class="search-container">
+                    <input type="text" id="search-input" class="search-input" placeholder="What do you want to listen to?">
+                </div>
+                <div class="track-list" id="search-results">
+                    </div>
+            </section>
+
+            <section id="library-view" class="page-view" style="display: none;">
+                <h2>Your Library</h2>
+                
+                <div class="library-section-title-container" style="margin-top: 0;">
+                    <h3 class="library-section-title">Playlists</h3>
+                </div>
+                
+                <div class="grid-container" id="playlists-grid">
+                    </div>
+
+                <div class="library-section-title-container">
+                    <h3 class="library-section-title" id="track-list-title">Recently Played</h3>
+                    <div class="action-buttons-group">
+                        <button class="action-link-btn danger" id="clear-history-btn" onclick="clearHistory()">Clear History</button>
+                        <button class="action-link-btn danger" id="delete-playlist-btn" onclick="deleteCurrentPlaylist()" style="display: none;">Delete Playlist</button>
+                        <button class="action-link-btn" id="history-toggle-btn" onclick="loadRecentlyPlayed()" style="display: none;">Back to History</button>
+                    </div>
+                </div>
+
+                <div class="input-bar" id="add-song-bar" style="display: none;">
+                    <div style="flex: 0.8;">
+                        <input type="text" id="song-url" class="custom-input" placeholder="File URL">
+                    </div>
+                    
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="song-title" class="custom-input" placeholder="Search track or custom title..." oninput="searchRecommendedTracks(this.value)">
+                        <div id="autocomplete-results" class="autocomplete-dropdown"></div>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <input type="text" id="song-artist" class="custom-input" placeholder="Artist Name">
+                    </div>
+                    
+                    <button class="submit-btn" onclick="addSongToPlaylist()">Add Track</button>
+                </div>
+
+                <div class="track-list" id="dynamic-track-list">
+                    </div>
+            </section>
+
+            <section id="create-playlist-view" class="page-view" style="display: none;">
+                <h2>Craft Your Sound</h2>
+                
+                <div class="creator-layout">
+                    <div class="form-section">
+                        <div class="input-group">
+                            <label for="playlist-name">Playlist Name</label>
+                            <input type="text" id="playlist-name" class="large-input" placeholder="e.g. Late Night Drives" autocomplete="off" oninput="updatePreviewText()">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Select a Vibe</label>
+                            <div class="vibe-grid" id="vibe-container">
+                                </div>
+                        </div>
+
+                        <button class="create-btn" onclick="saveNewPlaylist()">Create & Go to Library</button>
+                    </div>
+
+                    <div class="preview-section">
+                        <div class="preview-label">Live Preview</div>
+                        <div class="card">
+                            <div class="card-cover" id="preview-cover">🎵</div>
+                            <div class="card-title" id="preview-title">My Playlist</div>
+                            <div class="card-subtitle">0 tracks</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="player-bar">
+        <div class="now-playing-details">
+            <div class="now-playing-title" id="current-title">Select a track to start listening</div>
+            <div class="now-playing-artist" id="current-artist">-</div>
+        </div>
+        
+        <audio id="audio-player" controls src=""></audio>
+    </footer>
+
+    <script>
+        // Core System Elements
+        const audioPlayer = document.getElementById('audio-player');
+        const currentTitle = document.getElementById('current-title');
+        const currentArtist = document.getElementById('current-artist');
+        
+        // Panels View Targets
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        const playlistsGrid = document.getElementById('playlists-grid');
+        const trackListContainer = document.getElementById('dynamic-track-list');
+        const trackListTitle = document.getElementById('track-list-title');
+        const historyToggleBtn = document.getElementById('history-toggle-btn');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+        const deletePlaylistBtn = document.getElementById('delete-playlist-btn'); 
+        const addSongBar = document.getElementById('add-song-bar'); 
+
+        // Creator Specific Targets
+        const vibeContainer = document.getElementById('vibe-container');
+        const previewCover = document.getElementById('preview-cover');
+        const previewTitle = document.getElementById('preview-title');
+        const nameInput = document.getElementById('playlist-name');
+
+        // Primary Music Catalogue Registry
+        const trackDatabase = [
+            { url: 'DopeNation-Kakalika.mp3', title: 'Kakalika', artist: 'DopeNation' },
+            { url: 'Famous-Pluto-Jembe-feat-Mavo.mp3', title: 'Jembe', artist: 'Famous Pluto feat.Mavo' },
+            { url: 'Famous-Pluto-Na-Scra-(TrendyBeatz.com).mp3', title: 'Na Scra', artist: 'Famous Pluto' },
+            { url: 'Kilobizzy.mp3', title: 'Kilobizzy', artist: 'Mavo' },
+            { url: 'Mavo  Mofe (Official Music Video).mp3', title: 'Mofe', artist: 'Mavo' },
+            { url: 'Mavo_-_Feel_Nice_@BaseNaija.mp3', title: 'Feel Nice', artist: 'Mavo' },
+            { url: 'NO11---TOO-HOT-naijatempo.com.mp3', title: 'Too Hot', artist: 'NO11' },
+            { url: 'NO11-HOW-FAR.mp3', title: 'How Far', artist: 'NO11' },
+            { url: 'Rema-Bounce-New-Song-(TrendyBeatz.com).mp3', title: 'Bounce', artist: 'Rema' },
+            { url: 'Shallipopi & Gunna - HIM (Official Video).mp3', title: 'HIM', artist: 'Shallipopi feat.Gunna' },
+            { url: 'Sssoundgawd, Mavo - Aura Salad.mp3', title: 'Aura Salad', artist: 'Sssoundgawd, Mavo' },
+            { url: 'SUPA - SEHski.mp3', title: 'SUPA-SEHski', artist: 'Monochrome' },
+            { url: 'TxC-Davido-ft-Shoday-Scotts-Maphuma-Al-Xapo---Nakupenda-naijatempo.com.mp3', title: 'Nakupenda', artist: 'TxC-Davido-ft-Shoday-Scotts-Maphuma-Al-Xapo' },
+            { url: 'Zaylevelten-Muzz-(TrendyBeatz.com).mp3', title: 'Muzz', artist: 'Zaylevelten' },
+            { url: 'Ken-Carson-Singapore-Ft-Destroy-Lonely-(HipHopKit.com).mp3', title: 'Singapore', artist: 'Ken Carson ft. Destroy Lonely' }
+        ];
+
+        // Creator Visual Aesthetics Theme Data
+        const vibes = [
+            { id: 'default', icon: "🎵", color: "linear-gradient(135deg, #a1c4fd, #c2e9fb)" },
+            { id: 'party', icon: "🎉", color: "linear-gradient(135deg, #FF9A9E, #FECFEF)" },
+            { id: 'fire', icon: "🔥", color: "linear-gradient(135deg, #ff416c, #ff4b2b)" },
+            { id: 'chill', icon: "🌊", color: "linear-gradient(135deg, #2193b0, #6dd5ed)" },
+            { id: 'focus', icon: "🧠", color: "linear-gradient(135deg, #84fab0, #8fd3f4)" },
+            { id: 'love', icon: "❤️", color: "linear-gradient(135deg, #450af5, #8e8ee5)" },
+            { id: 'moon', icon: "🌙", color: "linear-gradient(135deg, #667eea, #764ba2)" },
+            { id: 'nature', icon: "🌿", color: "linear-gradient(135deg, #11998e, #38ef7d)" }
+        ];
+
+        // Initial Storage Default States
+        const defaultPlaylists = {
+            "Liked Songs": { icon: "❤️", color: "linear-gradient(135deg, #450af5, #8e8ee5)", tracks: [
+                { url: 'Rema-Bounce-New-Song-(TrendyBeatz.com).mp3', title: 'Bounce', artist: 'Rema' },
+                { url: 'Mavo_-_Feel_Nice_@BaseNaija.mp3', title: 'Feel Nice', artist: 'Mavo' }
+            ]},
+            "Workout Mix": { icon: "🔥", color: "linear-gradient(135deg, #ff416c, #ff4b2b)", tracks: [
+                { url: 'DopeNation-Kakalika.mp3', title: 'Kakalika', artist: 'DopeNation' },
+                { url: 'NO11---TOO-HOT-naijatempo.com.mp3', title: 'Too Hot', artist: 'NO11' }
+            ]}
+        };
+
+        let playlistDatabase = JSON.parse(localStorage.getItem('sonicstream_playlists')) || defaultPlaylists;
+        let recentlyPlayed = JSON.parse(localStorage.getItem('sonicstream_history')) || [];
+        let activeViewContext = 'history'; 
+        let selectedVibe = vibes[0]; 
+
+        // Application Lifecycles Bootstrapper
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPlaylists();
+            loadRecentlyPlayed();
+            renderVibeGrid();
+            updatePreviewUI();
+        });
+
+        // Global Autocomplete Dropdown Dismissal
+        document.addEventListener('click', (event) => {
+            const dropdown = document.getElementById('autocomplete-results');
+            const wrapper = document.querySelector('.autocomplete-wrapper');
+            if (wrapper && !wrapper.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // Single Page Switching Router Engine
+        function switchPage(viewId, clickedElement) {
+            const pages = document.querySelectorAll('.page-view');
+            pages.forEach(page => page.style.display = 'none');
+
+            document.getElementById(viewId).style.display = 'block';
+
+            const buttons = document.querySelectorAll('.sidebar-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+            } else {
+                // Lookup navigation item if routed programmatically
+                const sideBtn = document.querySelector(`.sidebar-btn[onclick*="${viewId}"]`);
+                if (sideBtn) sideBtn.classList.add('active');
+            }
+
+            // Route view synchronization hooks
+            if (viewId === 'library-view') {
+                renderPlaylists();
+                if (activeViewContext === 'history') {
+                    loadRecentlyPlayed();
+                } else if (playlistDatabase[activeViewContext]) {
+                    loadPlaylist(activeViewContext);
+                } else {
+                    loadRecentlyPlayed();
+                }
+            } else if (viewId === 'create-playlist-view') {
+                // Clean input fields on navigation reset
+                nameInput.value = '';
+                selectedVibe = vibes[0];
+                renderVibeGrid();
+                updatePreviewText();
+                updatePreviewUI();
+            }
+        }
+
+        // Playback Engine Manager
+        function playTrack(audioUrl, title, artist, element) {
+            audioPlayer.src = audioUrl;
+            currentTitle.textContent = title;
+            currentArtist.textContent = artist;
+
+            const tracks = document.querySelectorAll('.track-item');
+            tracks.forEach(track => track.classList.remove('playing'));
+
+            if (element) {
+                element.classList.add('playing');
+            } else {
+                document.querySelectorAll('.track-item').forEach(item => {
+                    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(audioUrl)) {
+                        item.classList.add('playing');
+                    }
+                });
+            }
+
+            audioPlayer.play();
+            addToHistory(audioUrl, title, artist);
+        }
+
+        // Live Search Filtering Input Engine
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            searchResults.innerHTML = ''; 
+
+            if (query === '') return;
+
+            const filteredTracks = trackDatabase.filter(track => 
+                track.title.toLowerCase().includes(query) || 
+                track.artist.toLowerCase().includes(query)
+            );
+
+            if (filteredTracks.length === 0) {
+                searchResults.innerHTML = '<div class="no-results">No tracks found. Try a different search.</div>';
+                return;
+            }
+
+            filteredTracks.forEach((track, index) => {
+                const trackItem = document.createElement('div');
+                trackItem.className = 'track-item';
+                if (audioPlayer.src.endsWith(encodeURIComponent(track.url))) {
+                    trackItem.classList.add('playing');
+                }
+                trackItem.onclick = function() {
+                    playTrack(track.url, track.title, track.artist, this);
+                };
+
+                trackItem.innerHTML = `
+                    <div class="track-number">${index + 1}</div>
+                    <div class="track-info">
+                        <div class="track-title">${track.title}</div>
+                        <div class="track-artist">${track.artist}</div>
+                    </div>
+                `;
+                searchResults.appendChild(trackItem);
+            });
+        });
+
+        // --- Creator Subsystem Core Mechanics ---
+        function updatePreviewText() {
+            const text = nameInput.value.trim();
+            previewTitle.textContent = text ? text : "My Playlist";
+        }
+
+        function renderVibeGrid() {
+            vibeContainer.innerHTML = '';
+            vibes.forEach(vibe => {
+                const box = document.createElement('div');
+                box.className = `vibe-option ${selectedVibe.id === vibe.id ? 'selected' : ''}`;
+                box.style.background = vibe.color;
+                box.textContent = vibe.icon;
+                
+                box.onclick = () => {
+                    selectedVibe = vibe;
+                    renderVibeGrid(); 
+                    updatePreviewUI(); 
+                };
+                
+                vibeContainer.appendChild(box);
+            });
+        }
+
+        function updatePreviewUI() {
+            previewCover.style.background = selectedVibe.color;
+            previewCover.textContent = selectedVibe.icon;
+        }
+
+        function saveNewPlaylist() {
+            const title = nameInput.value.trim();
+            
+            if (!title) {
+                return alert('Please give your playlist a name first!');
+            }
+
+            if (playlistDatabase[title]) {
+                return alert('A playlist with this name already exists. Try a different name.');
+            }
+
+            playlistDatabase[title] = {
+                icon: selectedVibe.icon,
+                color: selectedVibe.color,
+                tracks: []
+            };
+
+            localStorage.setItem('sonicstream_playlists', JSON.stringify(playlistDatabase));
+
+            // Instant router updates: Refresh indices and slide panel back into full Library focus view
+            renderPlaylists();
+            loadPlaylist(title);
+            switchPage('library-view', null);
+        }
+
+        // Library Views Rendering Grid Engine
+        function renderPlaylists() {
+            playlistsGrid.innerHTML = '';
+            Object.keys(playlistDatabase).forEach(name => {
+                const data = playlistDatabase[name];
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('onclick', `loadPlaylist('${name.replace(/'/g, "\\'")}')`);
+                
+                card.innerHTML = `
+                    <button class="delete-card-btn" onclick="deletePlaylistFromCard('${name.replace(/'/g, "\\'")}', event)" title="Delete Playlist">❌</button>
+                    <div class="card-cover" style="background: ${data.color || 'linear-gradient(135deg, #282828, #121212)'}">${data.icon || '🎵'}</div>
+                    <div class="card-title">${name}</div>
+                    <div class="card-subtitle">${data.tracks.length} tracks</div>
+                `;
+                playlistsGrid.appendChild(card);
+            });
+        }
+
+        function deletePlaylistFromCard(playlistName, event) {
+            event.stopPropagation(); 
+            const confirmDelete = confirm(`Are you sure you want to delete "${playlistName}"?`);
+            if (confirmDelete) {
+                delete playlistDatabase[playlistName];
+                localStorage.setItem('sonicstream_playlists', JSON.stringify(playlistDatabase));
+                renderPlaylists(); 
+                if (activeViewContext === playlistName) {
+                    loadRecentlyPlayed();
+                }
+            }
+        }
+
+        // Subsystem Dynamic Tracklist Array Compiler
+        function renderTracks(tracksArray) {
+            trackListContainer.innerHTML = '';
+
+            if (tracksArray.length === 0) {
+                trackListContainer.innerHTML = `<div class="empty-msg">No tracks here yet. Add some tracks above!</div>`;
+                return;
+            }
+
+            tracksArray.forEach((track, index) => {
+                const trackItem = document.createElement('div');
+                trackItem.className = 'track-item';
+                
+                if (audioPlayer.src.endsWith(encodeURIComponent(track.url))) {
+                    trackItem.classList.add('playing');
+                }
+
+                const cleanUrl = track.url.replace(/'/g, "\\'");
+                const cleanTitle = track.title.replace(/'/g, "\\'");
+                const cleanArtist = track.artist.replace(/'/g, "\\'");
+
+                trackItem.setAttribute('onclick', `playTrack('${cleanUrl}', '${cleanTitle}', '${cleanArtist}', this)`);
+
+                trackItem.innerHTML = `
+                    <div class="track-number">${index + 1}</div>
+                    <div class="track-info">
+                        <div class="track-title">${track.title}</div>
+                        <div class="track-artist">${track.artist}</div>
+                    </div>
+                    <button class="remove-track-btn" onclick="removeTrackByIndex(${index}, event)">❌</button>
+                `;
+                trackListContainer.appendChild(trackItem);
+            });
+        }
+
+        // Interactive Suggestion Boxes Autocomplete Lookups
+        function searchRecommendedTracks(query) {
+            const dropdown = document.getElementById('autocomplete-results');
+            if (!query.trim()) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            const lowerQuery = query.toLowerCase();
+            const matches = trackDatabase.filter(track => 
+                track.title.toLowerCase().includes(lowerQuery) || 
+                track.artist.toLowerCase().includes(lowerQuery)
+            );
+
+            if (matches.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            dropdown.innerHTML = '';
+            matches.forEach(track => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                
+                const cleanUrl = track.url.replace(/'/g, "\\'");
+                const cleanTitle = track.title.replace(/'/g, "\\'");
+                const cleanArtist = track.artist.replace(/'/g, "\\'");
+
+                item.setAttribute('onclick', `selectRecommendedTrack('${cleanUrl}', '${cleanTitle}', '${cleanArtist}')`);
+                item.innerHTML = `
+                    <div class="autocomplete-title">${track.title}</div>
+                    <div class="autocomplete-artist">${track.artist}</div>
+                `;
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+        }
+
+        function selectRecommendedTrack(url, title, artist) {
+            document.getElementById('song-url').value = url;
+            document.getElementById('song-title').value = title;
+            document.getElementById('song-artist').value = artist;
+            document.getElementById('autocomplete-results').style.display = 'none';
+        }
+
+        function addSongToPlaylist() {
+            const urlInput = document.getElementById('song-url');
+            const titleInput = document.getElementById('song-title');
+            const artistInput = document.getElementById('song-artist');
+
+            const url = urlInput.value.trim();
+            const title = titleInput.value.trim();
+            const artist = artistInput.value.trim();
+
+            if (!url || !title || !artist) {
+                return alert('Please fill in the file name, song title, and artist name.');
+            }
+
+            playlistDatabase[activeViewContext].tracks.push({ url, title, artist });
+            localStorage.setItem('sonicstream_playlists', JSON.stringify(playlistDatabase));
+            
+            urlInput.value = '';
+            titleInput.value = '';
+            artistInput.value = '';
+
+            renderPlaylists();
+            renderTracks(playlistDatabase[activeViewContext].tracks);
+        }
+
+        function removeTrackByIndex(index, event) {
+            event.stopPropagation(); 
+
+            if (activeViewContext === 'history') {
+                recentlyPlayed.splice(index, 1);
+                localStorage.setItem('sonicstream_history', JSON.stringify(recentlyPlayed));
+                renderTracks(recentlyPlayed);
+            } else {
+                playlistDatabase[activeViewContext].tracks.splice(index, 1);
+                localStorage.setItem('sonicstream_playlists', JSON.stringify(playlistDatabase));
+                renderPlaylists(); 
+                renderTracks(playlistDatabase[activeViewContext].tracks); 
+            }
+        }
+
+        // History Registry Management Subsystem
+        function addToHistory(url, title, artist) {
+            recentlyPlayed = recentlyPlayed.filter(track => track.url !== url);
+            recentlyPlayed.unshift({ url, title, artist });
+            
+            if (recentlyPlayed.length > 15) recentlyPlayed.pop();
+
+            localStorage.setItem('sonicstream_history', JSON.stringify(recentlyPlayed));
+
+            if (activeViewContext === 'history') {
+                renderTracks(recentlyPlayed);
+            }
+        }
+
+        function clearHistory() {
+            recentlyPlayed = [];
+            localStorage.removeItem('sonicstream_history');
+            if (activeViewContext === 'history') {
+                renderTracks(recentlyPlayed);
+            }
+        }
+
+        function deleteCurrentPlaylist() {
+            if (activeViewContext === 'history') return; 
+            const confirmDelete = confirm(`Are you sure you want to delete the playlist "${activeViewContext}"?`);
+            if (confirmDelete) {
+                delete playlistDatabase[activeViewContext]; 
+                localStorage.setItem('sonicstream_playlists', JSON.stringify(playlistDatabase)); 
+                renderPlaylists(); 
+                loadRecentlyPlayed(); 
+            }
+        }
+
+        // Section Loading Mechanics Toggle Switches
+        function loadPlaylist(playlistName) {
+            activeViewContext = playlistName;
+            trackListTitle.textContent = `Playlist: ${playlistName}`;
+            
+            historyToggleBtn.style.display = 'block';
+            deletePlaylistBtn.style.display = 'block';
+            clearHistoryBtn.style.display = 'none';
+            addSongBar.style.display = 'flex'; 
+            
+            renderTracks(playlistDatabase[playlistName].tracks);
+        }
+
+        function loadRecentlyPlayed() {
+            activeViewContext = 'history';
+            trackListTitle.textContent = 'Recently Played';
+            
+            historyToggleBtn.style.display = 'none';
+            deletePlaylistBtn.style.display = 'none';
+            clearHistoryBtn.style.display = 'block';
+            addSongBar.style.display = 'none'; 
+            
+            renderTracks(recentlyPlayed);
+        }
+    </script>
+</body>
+</html>
