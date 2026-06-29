@@ -784,7 +784,7 @@
             <div class="now-playing-artist" id="current-artist">-</div>
         </div>
         
-        <audio id="audio-player" controls src=""></audio>
+        <audio id="audio-player" controls src="" preload="auto"></audio>
     </footer>
 
     <script>
@@ -934,6 +934,36 @@
 
             audioPlayer.play();
             addToHistory(audioUrl, title, artist);
+            
+            // Trigger seamless dynamic preloading rules for the next candidate track
+            prefetchNextTrack(audioUrl);
+        }
+
+        // Background Pre-fetching Engine for uninterrupted music caching
+        function prefetchNextTrack(currentUrl) {
+            let nextUrl = '';
+            
+            // Determine active track context list to pick the true next item
+            if (activeViewContext === 'history') {
+                const idx = recentlyPlayed.findIndex(t => t.url === currentUrl);
+                if (idx !== -1 && idx < recentlyPlayed.length - 1) nextUrl = recentlyPlayed[idx + 1].url;
+            } else if (playlistDatabase[activeViewContext]) {
+                const idx = playlistDatabase[activeViewContext].tracks.findIndex(t => t.url === currentUrl);
+                if (idx !== -1 && idx < playlistDatabase[activeViewContext].tracks.length - 1) nextUrl = playlistDatabase[activeViewContext].tracks[idx + 1].url;
+            }
+            
+            // Fall back to the global music catalogue if context boundaries are not matched
+            if (!nextUrl) {
+                const idx = trackDatabase.findIndex(t => t.url === currentUrl);
+                if (idx !== -1 && idx < trackDatabase.length - 1) nextUrl = trackDatabase[idx + 1].url;
+            }
+
+            // Force dynamic network audio fetch pipeline to warm browser disk cache 
+            if (nextUrl) {
+                const prefetcher = new Audio();
+                prefetcher.src = nextUrl;
+                prefetcher.preload = 'auto';
+            }
         }
 
         // Live Search Filtering Input Engine
@@ -1194,6 +1224,7 @@
             }
         }
 
+        // Clear History
         function clearHistory() {
             recentlyPlayed = [];
             localStorage.removeItem('sonicstream_history');
